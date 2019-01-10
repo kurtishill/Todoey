@@ -8,8 +8,9 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
-class CategoryViewController: UITableViewController {
+class CategoryViewController: SwipeTableViewController {
     
     let realm = try! Realm()
     
@@ -19,6 +20,8 @@ class CategoryViewController: UITableViewController {
         super.viewDidLoad()
         
         load()
+        
+        tableView.separatorStyle = .none
 
     }
     
@@ -32,9 +35,34 @@ class CategoryViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
-        cell.textLabel?.text = categoryArray?[indexPath.row].name ?? "No Categories Added Yet"
+        if let category = categoryArray?[indexPath.row] {
+            
+            cell.textLabel?.text = category.name
+            
+            guard let categoryColor = UIColor(hexString: category.color) else { fatalError() }
+            
+            cell.textLabel?.textColor = ContrastColorOf(categoryColor, returnFlat: true)
+            
+            cell.backgroundColor = UIColor(hexString: category.color)
+            
+            cell.accessoryView?.tintColor = ContrastColorOf(categoryColor, returnFlat: true)
+            
+            cell.accessoryType = .disclosureIndicator
+            
+            cell.tintColor = ContrastColorOf(categoryColor, returnFlat: true)
+            
+            let image = UIImage(named:"disclosureArrow")?.withRenderingMode(.alwaysTemplate)
+            if let width = image?.size.width, let height = image?.size.height {
+                let disclosureImageView = UIImageView(frame: CGRect(x: 0, y: 0, width: width, height: height))
+                disclosureImageView.image = image
+                cell.accessoryView = disclosureImageView
+            }
+            
+            
+            
+        }
         
         return cell
     }
@@ -76,6 +104,7 @@ class CategoryViewController: UITableViewController {
                 
                 let category = Category()
                 category.name = textField.text!
+                category.color = UIColor.randomFlat.hexValue()
                 
                 self.save(category: category)
                 
@@ -115,4 +144,34 @@ class CategoryViewController: UITableViewController {
     }
     
     
+    // MARK: - Delete data from swipe
+    
+    override func updateModel(at indexPath: IndexPath) {
+        
+        if let categoryForDeletion = self.categoryArray?[indexPath.row] {
+
+                do {
+                    try self.realm.write {
+                        self.realm.delete(categoryForDeletion)
+                    }
+                } catch {
+                    print("Error deleting category: \(error)")
+                }
+                
+            }
+            
+        }
+    
 }
+
+
+
+
+
+
+
+
+
+
+
+
